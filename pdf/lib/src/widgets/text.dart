@@ -662,6 +662,11 @@ class RichTextContext extends WidgetContext {
 
 typedef Hyphenation = List<String> Function(String word);
 
+final softHyphen = String.fromCharCode(0x00AD);
+List<String> _defaultHyphenator(String word) {
+  return word.split(softHyphen).toList();
+}
+
 class RichText extends Widget with SpanningWidget {
   RichText({
     required this.text,
@@ -672,7 +677,7 @@ class RichText extends Widget with SpanningWidget {
     this.textScaleFactor = 1.0,
     this.maxLines,
     this.overflow = TextOverflow.visible,
-    this.hyphenation,
+    this.hyphenation = _defaultHyphenator,
   });
 
   static bool debug = false;
@@ -940,7 +945,8 @@ class RichText extends Widget with SpanningWidget {
           for (var line = 0; line < spanLines.length; line++) {
             final words = spanLines[line].split(RegExp(r'\s'));
             for (var index = 0; index < words.length; index++) {
-              final word = words[index];
+              final originalWord = words[index];
+              final word = words[index].replaceAll(softHyphen, '');
 
               if (word.isEmpty) {
                 offsetX += space.advanceWidth * style.wordSpacing! +
@@ -956,7 +962,7 @@ class RichText extends Widget with SpanningWidget {
               if (_softWrap &&
                   offsetX + metrics.width > constraintWidth + 0.00001) {
                 if (hyphenation != null) {
-                  final syllables = hyphenation!(word);
+                  final syllables = hyphenation!(originalWord);
                   if (syllables.length > 1) {
                     var fits = '';
                     for (var syllable in syllables) {
